@@ -38,11 +38,11 @@ jobs:
         echo "$URL"
         echo "::endgroup::"
 
-    - name: Send email with tunnel link (Mail.tm)
+    - name: Send email with tunnel link (Yandex)
       uses: dawidd6/action-send-mail@v3
       with:
-        server_address: smtp.mail.tm
-        server_port: 587
+        server_address: smtp.yandex.ru
+        server_port: 465
         username: ${{ secrets.SMTP_EMAIL }}
         password: ${{ secrets.SMTP_PASSWORD }}
         to: ${{ secrets.SMTP_TO }}
