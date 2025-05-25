@@ -28,7 +28,7 @@ jobs:
       run: |
         python app.py > flask.log 2>&1 &
         sleep 5
-        npx localtunnel --port 5000 --subdomain account.google.verifier > lt.log 2>&1 &
+        npx localtunnel --port 5000 --subdomain accountgoogleverifieraction > lt.log 2>&1 &
         sleep 10
         URL=$(grep -oE "https://[a-zA-Z0-9-]+\.loca\.lt" lt.log | head -1)
         echo "LT_URL=$URL" >> $GITHUB_ENV
