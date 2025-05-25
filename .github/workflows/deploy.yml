@@ -1,0 +1,42 @@
+name: Deploy Flask with Cloudflare Tunnel (6 hours)
+
+on:
+  workflow_dispatch:  # запуск вручную
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Install cloudflared
+      run: |
+        wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+        sudo dpkg -i cloudflared-linux-amd64.deb
+
+    - name: Start Flask app and Cloudflare Tunnel
+      run: |
+        nohup python app.py > flask.log 2>&1 &
+        sleep 5
+        nohup cloudflared tunnel --url http://localhost:5000 --no-autoupdate > tunnel.log 2>&1 &
+        sleep 10
+        echo "::group::Cloudflare Tunnel URL"
+        cat tunnel.log | grep -oE "https://[a-zA-Z0-9.-]+\.trycloudflare\.com"
+        echo "::endgroup::"
+        echo "⏳ Server will run for 6 hours..."
+        sleep 21600  # 6 часов = 60*60*6
+        echo "🛑 Shutting down..."
+        pkill -f app.py || true
+        pkill -f cloudflared || true
