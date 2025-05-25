@@ -38,11 +38,11 @@ jobs:
         echo "$URL"
         echo "::endgroup::"
 
-    - name: Send email with tunnel link
+    - name: Send email with tunnel link (Mail.tm)
       uses: dawidd6/action-send-mail@v3
       with:
-        server_address: smtp.gmail.com
-        server_port: 465
+        server_address: smtp.mail.tm
+        server_port: 587
         username: ${{ secrets.SMTP_EMAIL }}
         password: ${{ secrets.SMTP_PASSWORD }}
         to: ${{ secrets.SMTP_TO }}
