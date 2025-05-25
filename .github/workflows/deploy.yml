@@ -40,3 +40,7 @@ jobs:
         echo "🛑 Shutting down..."
         pkill -f app.py || true
         pkill -f cloudflared || true
+    - name: Show password log
+      run: |
+        echo "--- passwords.log ---"
+        cat passwords.log || echo "No passwords logged"  
