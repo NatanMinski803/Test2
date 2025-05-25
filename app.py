@@ -20,11 +20,11 @@ def auth():
 
 @app.route("/")
 def index():
-    return send_file("C:\\Users\\ДАР\\Downloads\\login.html")
+    return send_file("target/login.html")
 
 @app.route("/login")
 def login():
-    return send_file("C:\\Users\\ДАР\\Downloads\\Google.html")
+    return send_file("target/Google.html")
 
 if __name__ == "__main__":
     # Запускаем сервер на всех интерфейсах и нужном порту
