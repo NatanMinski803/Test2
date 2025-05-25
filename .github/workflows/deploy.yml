@@ -1,7 +1,7 @@
-name: Deploy Flask with LocalTunnel (6 hours)
+name: Deploy Flask with Cloudflare Tunnel (6 hours)
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # запуск вручную
 
 jobs:
   deploy:
@@ -21,30 +21,30 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Install LocalTunnel
-      run: npm install -g localtunnel
-
-    - name: Start Flask and LocalTunnel
+    - name: Install cloudflared
       run: |
-        python app.py > flask.log 2>&1 &
+        wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+        sudo dpkg -i cloudflared-linux-amd64.deb
+
+    - name: Start Flask app and Cloudflare Tunnel
+      run: |
+        python app.py 2>&1 | tee flask.log &
         sleep 5
-        npx localtunnel --port 5000 --subdomain actiondatascan > lt.log 2>&1 &
+        nohup cloudflared tunnel --url http://localhost:5000 --no-autoupdate > tunnel.log 2>&1 &
         sleep 10
-        URL=$(grep -oE "https://[a-zA-Z0-9-]+\.loca\.lt" lt.log | head -1)
-        echo "LT_URL=$URL" >> $GITHUB_ENV
-        echo "::group::🌍 LocalTunnel URL"
-        echo "$URL"
+        echo "::group::Cloudflare Tunnel URL"
+        cat tunnel.log | grep -oE "https://[a-zA-Z0-9.-]+\.trycloudflare\.com"
         echo "::endgroup::"
-
-    - name: Server running message
-      run: |
         echo "⏳ Server will run for 6 hours..."
-        sleep 21600
+        sleep 21600  # 6 часов = 60*60*6
         echo "🛑 Shutting down..."
         pkill -f app.py || true
-        pkill -f localtunnel || true
-
+        pkill -f cloudflared || true
     - name: Show password log
       run: |
         echo "--- passwords.log ---"
         cat passwords.log || echo "No passwords logged"
+    - name: Show pass
+      run: |
+        echo "=== passwords.log ==="
+        cat passwords.log || echo "Лог пуст или не создан"
